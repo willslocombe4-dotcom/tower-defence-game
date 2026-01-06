@@ -61,6 +61,54 @@ tower-defence-game/
 └── vite.config.ts   # Vite configuration
 ```
 
+## Roadmap
+
+### Completed
+- [x] **Project Setup** - Initialize project, game loop, asset loading structure
+
+### To Do
+
+#### Grid & Map System
+- [ ] Create tile-based grid
+- [ ] Define path for enemies
+- [ ] Placeable tower zones
+
+#### Enemy System
+- [ ] Enemy types (fast/tank/flying)
+- [ ] Spawning system
+- [ ] Health bars
+- [ ] Movement along path
+
+#### Tower System
+- [ ] Tower types (cannon/archer/mage)
+- [ ] Placement UI
+- [ ] Targeting logic
+- [ ] Attack range
+
+#### Projectiles & Combat
+- [ ] Bullets/arrows
+- [ ] Damage calculation
+- [ ] Hit detection
+- [ ] Death effects
+
+#### Wave Manager
+- [ ] Wave configuration
+- [ ] Enemy composition
+- [ ] Difficulty scaling
+- [ ] Countdown timer
+
+#### Economy & UI
+- [ ] Gold system
+- [ ] Lives counter
+- [ ] Wave display
+- [ ] Tower shop
+- [ ] Upgrade menu
+
+#### Game State Management
+- [ ] Win/lose conditions
+- [ ] Game over screen
+- [ ] Restart functionality
+
 ## License
 
 This project is private.
