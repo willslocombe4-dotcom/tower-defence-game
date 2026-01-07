@@ -1,11 +1,12 @@
 import { Projectile } from '../entities/Projectile';
-import type {
-  ITarget,
-  DamageInfo,
-  CombatEvent,
-  CombatEventCallback,
-  CombatEventType,
-  Position,
+import {
+  DamageType,
+  type ITarget,
+  type DamageInfo,
+  type CombatEvent,
+  type CombatEventCallback,
+  type CombatEventType,
+  type Position,
 } from '../types/combat';
 import { ProjectileManager } from './ProjectileManager';
 
@@ -232,24 +233,32 @@ export class CombatSystem {
 
   /**
    * Calculate final damage after applying armor and modifiers.
+   *
+   * Damage types:
+   * - Physical: Full armor reduction applied
+   * - Magical: 30% armor penetration (ignores 30% of armor)
+   * - True: Ignores all armor
    */
   calculateDamage(damageInfo: DamageInfo, target: ITarget): number {
     let damage = damageInfo.amount;
 
-    // Apply armor reduction (except for true damage)
-    if (damageInfo.type !== 'true') {
-      // Armor formula: damage reduction = armor / (armor + 100)
-      // At 100 armor, 50% reduction; at 200 armor, 66% reduction
-      const reduction = target.armor / (target.armor + 100);
-      damage = damage * (1 - reduction);
+    // True damage ignores all armor
+    if (damageInfo.type === DamageType.TRUE) {
+      return Math.max(1, Math.round(damage));
     }
 
-    // Magical damage ignores 30% of armor
-    if (damageInfo.type === 'magical') {
-      const effectiveArmor = target.armor * 0.7;
-      const reduction = effectiveArmor / (effectiveArmor + 100);
-      damage = damageInfo.amount * (1 - reduction);
+    // Calculate effective armor based on damage type
+    let effectiveArmor = target.armor;
+
+    // Magical damage ignores 30% of armor (armor penetration)
+    if (damageInfo.type === DamageType.MAGICAL) {
+      effectiveArmor = target.armor * 0.7;
     }
+
+    // Armor formula: damage reduction = armor / (armor + 100)
+    // At 100 armor, 50% reduction; at 200 armor, 66% reduction
+    const reduction = effectiveArmor / (effectiveArmor + 100);
+    damage = damage * (1 - reduction);
 
     // Minimum damage of 1
     return Math.max(1, Math.round(damage));

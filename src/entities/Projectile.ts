@@ -1,10 +1,10 @@
 import { Entity } from './Entity';
-import type {
-  Position,
-  ProjectileConfig,
-  ProjectileType,
-  DamageInfo,
+import {
   DamageType,
+  type Position,
+  type ProjectileConfig,
+  type ProjectileType,
+  type DamageInfo,
 } from '../types/combat';
 
 export interface ProjectileOptions {
@@ -112,10 +112,10 @@ export class Projectile extends Entity {
    * Get damage info for applying to targets.
    */
   getDamageInfo(): DamageInfo {
-    const damageType = this.config.type === 'magic' ? 'magical' : 'physical';
+    const damageType = this.config.type === 'magic' ? DamageType.MAGICAL : DamageType.PHYSICAL;
     return {
       amount: this.config.damage,
-      type: damageType as DamageType,
+      type: damageType,
       sourceId: this.sourceId,
     };
   }

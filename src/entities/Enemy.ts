@@ -63,6 +63,7 @@ export class Enemy extends Entity implements ITarget {
 
   // Callbacks
   private _onDeath?: () => void;
+  private flashTimeoutId?: ReturnType<typeof setTimeout>;
 
   constructor(config: EnemyConfig) {
     super('enemy');
@@ -122,11 +123,15 @@ export class Enemy extends Entity implements ITarget {
     this.updateHealthBar();
 
     // Flash red briefly
-    this.graphics.tint = 0xffffff;
-    setTimeout(() => {
+    if (this.flashTimeoutId) {
+      clearTimeout(this.flashTimeoutId);
+    }
+    this.graphics.tint = 0xff0000;
+    this.flashTimeoutId = setTimeout(() => {
       if (this.graphics && !this.graphics.destroyed) {
         this.graphics.tint = 0xffffff;
       }
+      this.flashTimeoutId = undefined;
     }, 100);
 
     if (this.health <= 0) {
@@ -265,6 +270,10 @@ export class Enemy extends Entity implements ITarget {
   // ============================================================================
 
   destroy(): void {
+    if (this.flashTimeoutId) {
+      clearTimeout(this.flashTimeoutId);
+      this.flashTimeoutId = undefined;
+    }
     if (this.healthBarGraphics) {
       this.healthBarGraphics.destroy();
       this.healthBarGraphics = null;
