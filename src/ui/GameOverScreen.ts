@@ -1,5 +1,8 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
+/** Duration for fade animations in milliseconds */
+const FADE_DURATION = 300;
+
 export interface GameOverScreenConfig {
   width: number;
   height: number;
@@ -17,6 +20,7 @@ export class GameOverScreen extends Container {
   private restartButton: Container;
   private menuButton: Container | null = null;
   private config: GameOverScreenConfig;
+  private animationFrameId: number | null = null;
 
   constructor(config: GameOverScreenConfig) {
     super();
@@ -157,34 +161,71 @@ export class GameOverScreen extends Container {
   }
 
   show(): void {
+    this.cancelAnimation();
     this.visible = true;
     this.alpha = 0;
     this.fadeIn();
   }
 
-  hide(): void {
-    this.visible = false;
+  hide(immediate: boolean = false): void {
+    this.cancelAnimation();
+    if (immediate) {
+      this.visible = false;
+      this.alpha = 0;
+    } else {
+      this.fadeOut();
+    }
+  }
+
+  private cancelAnimation(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   private fadeIn(): void {
-    const duration = 300;
     const startTime = Date.now();
 
     const animate = (): void => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+      const progress = Math.min(elapsed / FADE_DURATION, 1);
 
       this.alpha = progress;
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        this.animationFrameId = requestAnimationFrame(animate);
+      } else {
+        this.animationFrameId = null;
       }
     };
 
-    animate();
+    this.animationFrameId = requestAnimationFrame(animate);
+  }
+
+  private fadeOut(): void {
+    const startTime = Date.now();
+    const startAlpha = this.alpha;
+
+    const animate = (): void => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / FADE_DURATION, 1);
+
+      this.alpha = startAlpha * (1 - progress);
+
+      if (progress < 1) {
+        this.animationFrameId = requestAnimationFrame(animate);
+      } else {
+        this.visible = false;
+        this.animationFrameId = null;
+      }
+    };
+
+    this.animationFrameId = requestAnimationFrame(animate);
   }
 
   destroy(): void {
+    this.cancelAnimation();
     this.removeAllListeners();
     super.destroy({ children: true });
   }

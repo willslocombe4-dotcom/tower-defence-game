@@ -237,4 +237,14 @@ export class GameStateManager {
     this.stateChangeCallbacks.clear();
     this.eventCallbacks.clear();
   }
+
+  /**
+   * Dispose of the state manager and clear all resources.
+   * Call this when the game is being destroyed.
+   */
+  dispose(): void {
+    this.clearAllCallbacks();
+    this.currentState = GameState.LOADING;
+    this.data = this.createInitialData(this.initialConfig);
+  }
 }

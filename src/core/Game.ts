@@ -172,6 +172,7 @@ export class Game {
 
   restart(): void {
     this.clearGameObjects();
+    this.clearGameplayCallbacks();
     this.stateManager.restart();
     this.gameLoop.start();
     console.log('Game restarted');
@@ -179,6 +180,7 @@ export class Game {
 
   returnToMenu(): void {
     this.clearGameObjects();
+    this.clearGameplayCallbacks();
     this.stateManager.reset();
     this.stateManager.transitionToMenu();
     this.hideGameOverScreen();
@@ -193,6 +195,11 @@ export class Game {
     }
   }
 
+  /**
+   * Clear all gameplay-related callbacks from the game loop.
+   * Preserves core engine callbacks but removes gameplay-specific ones.
+   * @param protectedIds - Array of callback IDs to preserve
+   */
   clearGameplayCallbacks(protectedIds: string[] = []): void {
     const callbackIds = this.gameLoop.getCallbackIds();
 
@@ -201,6 +208,17 @@ export class Game {
         this.gameLoop.removeUpdateCallback(id);
       }
     }
+  }
+
+  /**
+   * Cleanup state event listeners for HUD updates.
+   * Call this before setting up new listeners to prevent memory leaks.
+   */
+  private cleanupStateListeners(): void {
+    this.stateManager.off('livesChanged', 'hud');
+    this.stateManager.off('goldChanged', 'hud');
+    this.stateManager.off('waveChanged', 'hud');
+    this.stateManager.off('scoreChanged', 'hud');
   }
 
   loseLife(amount: number = 1): void {
