@@ -13,7 +13,7 @@ interface ControlEntry {
 export class ControlsHelpUI extends Container {
   private config: ControlsHelpUIConfig;
   private background: Graphics;
-  private isVisible: boolean = true;
+  private isVisible: boolean = false; // Hidden by default, press H to show
 
   private static readonly CONTROLS: ControlEntry[] = [
     { key: 'P', description: 'Pause / Resume' },
@@ -44,6 +44,7 @@ export class ControlsHelpUI extends Container {
     this.addChild(this.background);
 
     this.createPanel();
+    this.visible = false; // Start hidden
   }
 
   private createPanel(): void {
