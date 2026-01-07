@@ -139,11 +139,12 @@ export class ProjectileManager {
    * Clear all projectiles.
    */
   clear(): void {
+    // Remove children first, then destroy to properly cleanup references
+    this.container.removeChildren();
     for (const projectile of this.projectiles.values()) {
       projectile.destroy();
     }
     this.projectiles.clear();
-    this.container.removeChildren();
   }
 
   // ============================================================================

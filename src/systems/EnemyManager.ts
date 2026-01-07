@@ -205,7 +205,7 @@ export class EnemyManager {
    * Get the number of active enemies.
    */
   getActiveCount(): number {
-    return this.enemies.size;
+    return Array.from(this.enemies.values()).filter((e) => e.isActive).length;
   }
 
   /**

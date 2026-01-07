@@ -190,7 +190,8 @@ export class CombatSystem {
       );
 
       // Damage falls off linearly from center (100% at center, 50% at edge)
-      const falloff = 1 - (distance / radius) * 0.5;
+      // Clamp to ensure non-negative falloff
+      const falloff = Math.max(0, 1 - (distance / radius) * 0.5);
       const baseDamage = damageInfo.amount * falloff;
       const finalDamage = this.calculateDamage(
         { ...damageInfo, amount: baseDamage },
@@ -289,11 +290,14 @@ export class CombatSystem {
 
   /**
    * Emit a combat event to all listeners.
+   * Creates a copy of listeners to allow safe modification during iteration.
    */
   private emit(event: CombatEvent): void {
     const listeners = this.eventListeners.get(event.type);
     if (listeners) {
-      for (const callback of listeners) {
+      // Copy to array to allow safe modification during iteration
+      const listenersCopy = Array.from(listeners);
+      for (const callback of listenersCopy) {
         callback(event);
       }
     }
