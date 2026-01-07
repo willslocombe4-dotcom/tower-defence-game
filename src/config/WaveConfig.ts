@@ -25,6 +25,24 @@ export const WAVE_TIMING = {
   countdownTickInterval: 1000,
 } as const;
 
+/** Endless mode scaling constants */
+export const ENDLESS_MODE_SCALING = {
+  /** Scale factor increase per cycle */
+  scalingPerCycle: 0.5,
+  /** Scale factor increase per wave within a cycle */
+  scalingPerWave: 0.05,
+  /** Minimum start delay in milliseconds */
+  minStartDelay: 1000,
+  /** Base start delay for endless waves */
+  baseStartDelay: 3000,
+  /** Start delay reduction per cycle */
+  startDelayReductionPerCycle: 200,
+  /** Minimum spawn delay in milliseconds */
+  minSpawnDelay: 200,
+  /** Spawn delay reduction per cycle */
+  spawnDelayReductionPerCycle: 50,
+} as const;
+
 // ============================================================================
 // Base Enemy Configurations
 // ============================================================================
@@ -273,8 +291,43 @@ export function generateScaledWaves(
 }
 
 /**
+ * Generate an endless wave based on wave index
+ * Uses cycling through base waves with progressive scaling
+ */
+export function generateEndlessWave(
+  waveIndex: number,
+  baseWaves: WaveDefinition[]
+): WaveDefinition {
+  const {
+    scalingPerCycle,
+    scalingPerWave,
+    minStartDelay,
+    baseStartDelay,
+    startDelayReductionPerCycle,
+    minSpawnDelay,
+    spawnDelayReductionPerCycle,
+  } = ENDLESS_MODE_SCALING;
+
+  const cyclePosition = waveIndex % baseWaves.length;
+  const cycleNumber = Math.floor(waveIndex / baseWaves.length);
+  const baseWave = baseWaves[cyclePosition];
+  const scaleFactor = 1 + cycleNumber * scalingPerCycle + cyclePosition * scalingPerWave;
+
+  return {
+    waveNumber: waveIndex + 1,
+    startDelay: Math.max(minStartDelay, baseStartDelay - cycleNumber * startDelayReductionPerCycle),
+    enemies: baseWave.enemies.map((spawn) => ({
+      ...spawn,
+      count: Math.round(spawn.count * scaleFactor),
+      spawnDelay: Math.max(minSpawnDelay, spawn.spawnDelay - cycleNumber * spawnDelayReductionPerCycle),
+    })),
+  };
+}
+
+/**
  * Create an endless mode wave generator
  * Returns a function that generates waves beyond the defined ones
+ * @deprecated Use generateEndlessWave directly instead
  */
 export function createEndlessWaveGenerator(
   baseWaves: WaveDefinition[]
@@ -283,7 +336,7 @@ export function createEndlessWaveGenerator(
     // If within defined waves, return with scaling
     if (waveNumber <= baseWaves.length) {
       const wave = baseWaves[waveNumber - 1];
-      const scaleFactor = 1 + (waveNumber - 1) * 0.05;
+      const scaleFactor = 1 + (waveNumber - 1) * ENDLESS_MODE_SCALING.scalingPerWave;
       return {
         ...wave,
         enemies: wave.enemies.map((spawn) => ({
@@ -293,20 +346,7 @@ export function createEndlessWaveGenerator(
       };
     }
 
-    // Generate endless waves based on wave number
-    const cyclePosition = (waveNumber - 1) % baseWaves.length;
-    const cycleNumber = Math.floor((waveNumber - 1) / baseWaves.length);
-    const baseWave = baseWaves[cyclePosition];
-    const scaleFactor = 1 + cycleNumber * 0.5 + cyclePosition * 0.05;
-
-    return {
-      waveNumber,
-      startDelay: Math.max(1000, 3000 - cycleNumber * 200),
-      enemies: baseWave.enemies.map((spawn) => ({
-        ...spawn,
-        count: Math.round(spawn.count * scaleFactor),
-        spawnDelay: Math.max(200, spawn.spawnDelay - cycleNumber * 50),
-      })),
-    };
+    // Use the shared endless wave generation logic
+    return generateEndlessWave(waveNumber - 1, baseWaves);
   };
 }

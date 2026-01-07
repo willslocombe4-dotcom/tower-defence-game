@@ -32,6 +32,7 @@ import {
   DIFFICULTY_PRESETS,
   getWaveEnemyCount,
   getScaledWaveDefinition,
+  generateEndlessWave,
 } from '../config/WaveConfig';
 
 // ============================================================================
@@ -235,8 +236,26 @@ export class WaveManager {
 
   /**
    * Set wave definitions
+   * @throws Error if waves array is empty or contains invalid wave numbers
    */
   setWaves(waves: WaveDefinition[]): void {
+    if (!waves || waves.length === 0) {
+      throw new Error('WaveManager: waves array cannot be empty');
+    }
+
+    // Validate wave definitions
+    for (let i = 0; i < waves.length; i++) {
+      const wave = waves[i];
+      if (!wave.enemies || wave.enemies.length === 0) {
+        console.warn(`WaveManager: Wave ${wave.waveNumber} has no enemies defined`);
+      }
+      for (const spawn of wave.enemies) {
+        if (spawn.count <= 0) {
+          console.warn(`WaveManager: Wave ${wave.waveNumber} has enemy spawn with invalid count: ${spawn.count}`);
+        }
+      }
+    }
+
     this.waves = [...waves];
   }
 
@@ -643,7 +662,12 @@ export class WaveManager {
     }
 
     if (typeof difficulty === 'string') {
-      return DIFFICULTY_PRESETS[difficulty] ?? DIFFICULTY_PRESETS.normal;
+      const preset = DIFFICULTY_PRESETS[difficulty];
+      if (!preset) {
+        console.warn(`WaveManager: Unknown difficulty preset "${difficulty}", falling back to "normal"`);
+        return DIFFICULTY_PRESETS.normal;
+      }
+      return preset;
     }
 
     return difficulty;
@@ -654,30 +678,13 @@ export class WaveManager {
       return this.waves[index];
     }
 
-    // Generate endless wave
+    // Generate endless wave using shared function
     if (this.endlessMode) {
-      return this.generateEndlessWave(index);
+      return generateEndlessWave(index, this.waves);
     }
 
     // Fallback (shouldn't happen)
     return this.waves[this.waves.length - 1];
-  }
-
-  private generateEndlessWave(waveNumber: number): WaveDefinition {
-    const cyclePosition = waveNumber % this.waves.length;
-    const cycleNumber = Math.floor(waveNumber / this.waves.length);
-    const baseWave = this.waves[cyclePosition];
-    const scaleFactor = 1 + cycleNumber * 0.5 + cyclePosition * 0.05;
-
-    return {
-      waveNumber: waveNumber + 1,
-      startDelay: Math.max(1000, 3000 - cycleNumber * 200),
-      enemies: baseWave.enemies.map((spawn) => ({
-        ...spawn,
-        count: Math.round(spawn.count * scaleFactor),
-        spawnDelay: Math.max(200, spawn.spawnDelay - cycleNumber * 50),
-      })),
-    };
   }
 
   private resetStatistics(): void {
