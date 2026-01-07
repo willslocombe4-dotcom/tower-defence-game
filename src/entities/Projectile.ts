@@ -66,7 +66,7 @@ export class Projectile extends Entity {
     this.maxDistance = length * 1.5;
 
     // Apply rotation based on direction (for arrow visual)
-    this.container.rotation = Math.atan2(this.directionY, this.directionX);
+    this.rotation = Math.atan2(this.directionY, this.directionX);
 
     this.render();
   }
@@ -93,7 +93,7 @@ export class Projectile extends Entity {
   }
 
   get isExpired(): boolean {
-    return this.distanceTraveled >= this.maxDistance || !this._active;
+    return this.distanceTraveled >= this.maxDistance || !this.isActive;
   }
 
   get hasAreaDamage(): boolean {
@@ -102,6 +102,14 @@ export class Projectile extends Entity {
 
   get areaRadius(): number {
     return this.config.areaRadius ?? 0;
+  }
+
+  /**
+   * Get the current position of the projectile.
+   * Returns a plain Position object (not PixiJS ObservablePoint).
+   */
+  getPosition(): Position {
+    return { x: this.x, y: this.y };
   }
 
   // ============================================================================
@@ -153,7 +161,7 @@ export class Projectile extends Entity {
   // ============================================================================
 
   update(deltaTime: number): void {
-    if (!this._active) return;
+    if (!this.isActive) return;
 
     // Move in direction
     const moveDistance = this.config.speed * deltaTime;
@@ -163,7 +171,7 @@ export class Projectile extends Entity {
 
     // Check if expired
     if (this.distanceTraveled >= this.maxDistance) {
-      this._active = false;
+      this.deactivate();
     }
   }
 

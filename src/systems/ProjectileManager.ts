@@ -59,7 +59,7 @@ export class ProjectileManager {
     });
 
     this.projectiles.set(projectile.id, projectile);
-    this.container.addChild(projectile.container);
+    this.container.addChild(projectile);
 
     return projectile;
   }
@@ -70,7 +70,7 @@ export class ProjectileManager {
   spawnFromConfig(options: ProjectileSpawnOptions): Projectile {
     const projectile = new Projectile(options);
     this.projectiles.set(projectile.id, projectile);
-    this.container.addChild(projectile.container);
+    this.container.addChild(projectile);
     return projectile;
   }
 
@@ -120,7 +120,7 @@ export class ProjectileManager {
   remove(id: string): boolean {
     const projectile = this.projectiles.get(id);
     if (projectile) {
-      this.container.removeChild(projectile.container);
+      this.container.removeChild(projectile);
       projectile.destroy();
       this.projectiles.delete(id);
       return true;

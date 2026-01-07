@@ -58,7 +58,29 @@ tower-defence-game/
 │   │   ├── Game.ts      # Main game class
 │   │   ├── GameLoop.ts  # Update loop management
 │   │   ├── AssetLoader.ts # Asset loading system
+│   │   ├── state/       # Game state management
+│   │   │   ├── GameState.ts
+│   │   │   └── GameStateManager.ts
 │   │   └── index.ts     # Core exports
+│   ├── config/
+│   │   └── WaveConfig.ts # Wave definitions & difficulty
+│   ├── map/
+│   │   ├── GameMap.ts   # Map orchestrator
+│   │   ├── Grid.ts      # Tile grid management
+│   │   ├── Tile.ts      # Individual tile class
+│   │   ├── PathManager.ts # Enemy path handling
+│   │   ├── types.ts     # Type definitions
+│   │   └── maps/        # Level configurations
+│   ├── systems/
+│   │   ├── EnemyManager.ts  # Enemy lifecycle
+│   │   ├── PathSystem.ts    # Path navigation
+│   │   └── WaveManager.ts   # Wave spawning
+│   ├── ui/
+│   │   ├── HUD.ts           # Heads-up display
+│   │   ├── GameOverScreen.ts # Victory/defeat screen
+│   │   └── PauseOverlay.ts  # Pause menu
+│   ├── types/
+│   │   └── index.ts     # Shared type definitions
 │   └── main.ts          # Application entry point
 ├── index.html           # HTML template
 ├── package.json         # Dependencies and scripts
@@ -77,54 +99,57 @@ Manages update callbacks using PixiJS ticker. Supports adding/removing callbacks
 ### AssetLoader
 Bundle-based asset management using PixiJS Assets API. Supports textures, spritesheets, and progress tracking.
 
+### Grid & Map System
+Tile-based grid with support for different tile types (path, buildable, blocked, spawn, exit). Includes PathManager for enemy waypoint navigation and GameMap for pointer interaction handling.
+
+### Wave Manager
+Manages wave-based enemy spawning with configurable wave definitions, timed spawn queues, auto-advance between waves, and event emission for UI integration.
+
+### Game State Manager
+Centralized state management with states (Loading, Menu, Playing, Paused, Victory, Game Over), event system for UI updates, and proper lifecycle handling.
+
+### UI Components
+- **HUD** - Displays lives, gold, wave counter, and score
+- **GameOverScreen** - Victory/defeat screen with restart and menu options
+- **PauseOverlay** - Pause menu with resume, restart, and main menu buttons
+
 ## Roadmap
 
 ### Completed
 - [x] **Project Setup** - PixiJS initialization, game loop, asset loading structure
+- [x] **Grid & Map System** - Tile-based grid, enemy path, placeable tower zones
+- [x] **Enemy System** - Enemy types (fast/tank/flying), spawning, health bars, path movement
+- [x] **Tower System** - Tower types (cannon/archer/mage), placement UI, targeting, range visualization
+- [x] **Wave Manager** - Wave configuration, enemy composition, difficulty scaling, countdown timer
+- [x] **Game State Management** - Win/lose conditions, game over screen, restart functionality, pause system
+- [x] **Basic UI** - HUD (lives/gold/wave/score), game over screen, pause overlay
 
 ### To Do
 
-#### Grid & Map System
-- [ ] Create tile-based grid
-- [ ] Define path for enemies
-- [ ] Placeable tower zones
-
-#### Enemy System
-- [ ] Enemy types (fast/tank/flying)
-- [ ] Spawning system
-- [ ] Health bars
-- [ ] Movement along path
-
-#### Tower System
-- [ ] Tower types (cannon/archer/mage)
-- [ ] Placement UI
-- [ ] Targeting logic
-- [ ] Attack range visualization
-
 #### Projectiles & Combat
 - [ ] Projectile sprites (bullets/arrows/magic)
-- [ ] Damage calculation
-- [ ] Hit detection
+- [ ] Damage calculation with armor system
+- [ ] Hit detection and collision
 - [ ] Death effects & particles
+- [ ] Area damage for splash towers
 
-#### Wave Manager
-- [ ] Wave configuration
-- [ ] Enemy composition per wave
-- [ ] Difficulty scaling
-- [ ] Countdown timer between waves
-
-#### Economy & UI
-- [ ] Gold system
-- [ ] Lives counter
-- [ ] Wave display
+#### Economy & Tower Shop
 - [ ] Tower shop panel
-- [ ] Upgrade menu
+- [ ] Tower upgrade system
+- [ ] Sell towers for partial refund
+- [ ] Tower info tooltips
 
-#### Game State Management
-- [ ] Win/lose conditions
-- [ ] Game over screen
-- [ ] Restart functionality
-- [ ] Level progression
+#### Polish & Effects
+- [ ] Sound effects and music
+- [ ] Particle effects for attacks
+- [ ] Screen shake on damage
+- [ ] Enemy death animations
+
+#### Level Progression
+- [ ] Multiple maps/levels
+- [ ] Level selection screen
+- [ ] Difficulty modes
+- [ ] Endless mode
 
 ## License
 

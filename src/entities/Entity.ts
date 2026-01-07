@@ -1,118 +1,125 @@
 import { Container, Graphics } from 'pixi.js';
-import type { Position, Bounds } from '../types/combat';
-
-let entityIdCounter = 0;
+import { Vector2D } from '../types';
 
 /**
  * Base class for all game entities.
- * Provides common functionality: position, bounds, lifecycle, and rendering.
- * Extend this class for specific entity types (Projectile, Enemy, Tower, etc.)
+ *
+ * Extends PixiJS Container to provide:
+ * - Unique identification
+ * - Active/inactive state management
+ * - Velocity for movement
+ * - Bounds for collision detection
+ * - Standard update lifecycle
+ *
+ * Subclasses should override update() for custom behavior.
  */
-export abstract class Entity {
-  public readonly id: string;
-  public container: Container;
-  protected graphics: Graphics;
-
-  protected _x: number = 0;
-  protected _y: number = 0;
+export abstract class Entity extends Container {
+  protected _id: string;
+  protected _velocity: Vector2D = { x: 0, y: 0 };
+  protected _isActive: boolean = true;
+  protected _tags: Set<string> = new Set();
   protected _width: number = 0;
   protected _height: number = 0;
-  protected _active: boolean = true;
+  protected graphics: Graphics;
 
-  constructor(entityType: string = 'entity') {
-    this.id = `${entityType}_${++entityIdCounter}`;
-    this.container = new Container();
+  constructor(id: string) {
+    super();
+    this._id = id;
     this.graphics = new Graphics();
-    this.container.addChild(this.graphics);
-  }
-
-  // ============================================================================
-  // Position Properties
-  // ============================================================================
-
-  get x(): number {
-    return this._x;
-  }
-
-  set x(value: number) {
-    this._x = value;
-    this.container.x = value;
-  }
-
-  get y(): number {
-    return this._y;
-  }
-
-  set y(value: number) {
-    this._y = value;
-    this.container.y = value;
-  }
-
-  get position(): Position {
-    return { x: this._x, y: this._y };
-  }
-
-  set position(pos: Position) {
-    this.x = pos.x;
-    this.y = pos.y;
-  }
-
-  // ============================================================================
-  // Dimension Properties
-  // ============================================================================
-
-  get width(): number {
-    return this._width;
-  }
-
-  get height(): number {
-    return this._height;
-  }
-
-  // ============================================================================
-  // State Properties
-  // ============================================================================
-
-  get active(): boolean {
-    return this._active;
-  }
-
-  set active(value: boolean) {
-    this._active = value;
-    this.container.visible = value;
-  }
-
-  // ============================================================================
-  // Core Methods
-  // ============================================================================
-
-  /**
-   * Get the bounding box for collision detection.
-   * Override for custom collision shapes.
-   */
-  getBounds(): Bounds {
-    return {
-      x: this._x - this._width / 2,
-      y: this._y - this._height / 2,
-      width: this._width,
-      height: this._height,
-    };
+    this.addChild(this.graphics);
   }
 
   /**
-   * Update the entity each frame.
-   * @param deltaTime - Normalized delta time (1.0 = 60fps frame)
+   * Update the entity. Called each frame by the game loop.
+   * @param deltaTime - Time since last frame in seconds (normalized)
    */
   abstract update(deltaTime: number): void;
 
   /**
-   * Render/draw the entity visuals.
-   * Called once during initialization or when appearance changes.
+   * Unique identifier for this entity.
    */
-  abstract render(): void;
+  get id(): string {
+    return this._id;
+  }
 
   /**
-   * Set position in one call.
+   * Whether the entity is active and should be updated/rendered.
+   */
+  get isActive(): boolean {
+    return this._isActive;
+  }
+
+  /**
+   * Backward-compatible alias for _isActive used by combat system.
+   */
+  protected get _active(): boolean {
+    return this._isActive;
+  }
+
+  protected set _active(value: boolean) {
+    this._isActive = value;
+  }
+
+  /**
+   * Backward-compatible alias for x position used by combat system.
+   */
+  protected get _x(): number {
+    return this.x;
+  }
+
+  protected set _x(value: number) {
+    this.x = value;
+  }
+
+  /**
+   * Backward-compatible alias for y position used by combat system.
+   */
+  protected get _y(): number {
+    return this.y;
+  }
+
+  protected set _y(value: number) {
+    this.y = value;
+  }
+
+  /**
+   * Returns the entity itself as a container reference.
+   * This provides backward compatibility with code that expects a separate container property.
+   */
+  get container(): this {
+    return this;
+  }
+
+  /**
+   * Alias for isActive, used by combat system.
+   */
+  get active(): boolean {
+    return this._isActive;
+  }
+
+  /**
+   * Current velocity vector.
+   */
+  get velocity(): Vector2D {
+    return { ...this._velocity };
+  }
+
+  /**
+   * Entity width for collision detection.
+   */
+  get entityWidth(): number {
+    return this._width;
+  }
+
+  /**
+   * Entity height for collision detection.
+   */
+  get entityHeight(): number {
+    return this._height;
+  }
+
+  /**
+   * Set entity position.
    */
   setPosition(x: number, y: number): void {
     this.x = x;
@@ -120,12 +127,40 @@ export abstract class Entity {
   }
 
   /**
+   * Set entity velocity.
+   */
+  setVelocity(x: number, y: number): void {
+    this._velocity.x = x;
+    this._velocity.y = y;
+  }
+
+  /**
+   * Get position as Vector2D.
+   */
+  getPosition(): Vector2D {
+    return { x: this.x, y: this.y };
+  }
+
+  /**
+   * Get the bounding box for collision detection.
+   * Note: Named getEntityBounds to avoid conflict with PixiJS Container.getBounds()
+   */
+  getEntityBounds(): { x: number; y: number; width: number; height: number } {
+    return {
+      x: this.x - this._width / 2,
+      y: this.y - this._height / 2,
+      width: this._width,
+      height: this._height,
+    };
+  }
+
+  /**
    * Check if this entity's bounds intersect with another entity's bounds.
    * Uses AABB (Axis-Aligned Bounding Box) collision.
    */
   intersects(other: Entity): boolean {
-    const a = this.getBounds();
-    const b = other.getBounds();
+    const a = this.getEntityBounds();
+    const b = other.getEntityBounds();
 
     return (
       a.x < b.x + b.width &&
@@ -138,8 +173,8 @@ export abstract class Entity {
   /**
    * Check if a point is inside this entity's bounds.
    */
-  containsPoint(point: Position): boolean {
-    const bounds = this.getBounds();
+  containsPoint(point: Vector2D): boolean {
+    const bounds = this.getEntityBounds();
     return (
       point.x >= bounds.x &&
       point.x <= bounds.x + bounds.width &&
@@ -149,27 +184,81 @@ export abstract class Entity {
   }
 
   /**
-   * Calculate distance to another position.
+   * Activate the entity.
    */
-  distanceTo(target: Position): number {
-    const dx = target.x - this._x;
-    const dy = target.y - this._y;
+  activate(): void {
+    this._isActive = true;
+    this.visible = true;
+  }
+
+  /**
+   * Deactivate the entity without destroying it.
+   * Useful for object pooling.
+   */
+  deactivate(): void {
+    this._isActive = false;
+    this.visible = false;
+  }
+
+  /**
+   * Add a tag to this entity for filtering/grouping.
+   */
+  addTag(tag: string): void {
+    this._tags.add(tag);
+  }
+
+  /**
+   * Remove a tag from this entity.
+   */
+  removeTag(tag: string): void {
+    this._tags.delete(tag);
+  }
+
+  /**
+   * Check if entity has a specific tag.
+   */
+  hasTag(tag: string): boolean {
+    return this._tags.has(tag);
+  }
+
+  /**
+   * Get all tags on this entity.
+   */
+  getTags(): string[] {
+    return Array.from(this._tags);
+  }
+
+  /**
+   * Calculate distance to another entity or point.
+   */
+  distanceTo(target: Entity | Vector2D): number {
+    const tx = target.x;
+    const ty = target.y;
+    const dx = tx - this.x;
+    const dy = ty - this.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
-   * Calculate distance to another entity (center to center).
+   * Calculate squared distance (faster, useful for comparisons).
    */
-  distanceToEntity(other: Entity): number {
-    return this.distanceTo(other.position);
+  distanceSquaredTo(target: Entity | Vector2D): number {
+    const tx = target.x;
+    const ty = target.y;
+    const dx = tx - this.x;
+    const dy = ty - this.y;
+    return dx * dx + dy * dy;
   }
 
   /**
-   * Clean up the entity and release resources.
+   * Clean up and destroy the entity.
    */
   destroy(): void {
-    this._active = false;
-    this.graphics.destroy();
-    this.container.destroy({ children: true });
+    this._isActive = false;
+    this._tags.clear();
+    if (this.graphics) {
+      this.graphics.destroy();
+    }
+    super.destroy({ children: true });
   }
 }

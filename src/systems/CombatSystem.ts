@@ -68,7 +68,7 @@ export class CombatSystem {
     const aliveTargets = this.getAliveTargets();
 
     for (const projectile of projectiles) {
-      if (!projectile.active) continue;
+      if (!projectile.isActive) continue;
 
       // Handle area damage projectiles differently
       if (projectile.hasAreaDamage && projectile.hasReachedTarget()) {
@@ -84,7 +84,7 @@ export class CombatSystem {
           this.processHit(projectile, target);
 
           // Stop checking if projectile is destroyed
-          if (!projectile.active) break;
+          if (!projectile.isActive) break;
         }
       }
     }
@@ -94,8 +94,8 @@ export class CombatSystem {
    * Check if a projectile collides with a target using AABB.
    */
   private checkCollision(projectile: Projectile, target: ITarget): boolean {
-    const pBounds = projectile.getBounds();
-    const tBounds = target.getBounds();
+    const pBounds = projectile.getEntityBounds();
+    const tBounds = target.getEntityBounds();
 
     return (
       pBounds.x < tBounds.x + tBounds.width &&
@@ -109,8 +109,9 @@ export class CombatSystem {
    * Check if a target is within radius of a position (for area damage).
    */
   private isInRadius(target: ITarget, center: Position, radius: number): boolean {
-    const dx = target.position.x - center.x;
-    const dy = target.position.y - center.y;
+    const pos = target.getTargetPosition();
+    const dx = pos.x - center.x;
+    const dy = pos.y - center.y;
     return dx * dx + dy * dy <= radius * radius;
   }
 
@@ -137,7 +138,7 @@ export class CombatSystem {
     // Emit hit event
     this.emit({
       type: 'projectile_hit',
-      position: projectile.position,
+      position: projectile.getPosition(),
       damage: { ...damageInfo, amount: finalDamage },
       targetId: target.id,
       projectileType: projectile.type,
@@ -146,7 +147,7 @@ export class CombatSystem {
     // Emit damage event
     this.emit({
       type: 'target_damaged',
-      position: target.position,
+      position: target.getTargetPosition(),
       damage: { ...damageInfo, amount: finalDamage },
       targetId: target.id,
     });
@@ -155,7 +156,7 @@ export class CombatSystem {
     if (!target.isAlive) {
       this.emit({
         type: 'target_killed',
-        position: target.position,
+        position: target.getTargetPosition(),
         targetId: target.id,
       });
       target.onDeath?.();
@@ -163,7 +164,7 @@ export class CombatSystem {
 
     // Remove projectile if it can't continue
     if (!continueFlying) {
-      projectile.active = false;
+      projectile.deactivate();
     }
   }
 
@@ -172,7 +173,7 @@ export class CombatSystem {
    */
   private processAreaDamage(projectile: Projectile, targets: ITarget[]): void {
     const damageInfo = projectile.getDamageInfo();
-    const center = projectile.position;
+    const center = projectile.getPosition();
     const radius = projectile.areaRadius;
 
     // Find all targets in radius
@@ -182,9 +183,10 @@ export class CombatSystem {
 
     // Damage each target (with falloff based on distance)
     for (const target of hitTargets) {
+      const targetPos = target.getTargetPosition();
       const distance = Math.sqrt(
-        (target.position.x - center.x) ** 2 +
-        (target.position.y - center.y) ** 2
+        (targetPos.x - center.x) ** 2 +
+        (targetPos.y - center.y) ** 2
       );
 
       // Damage falls off linearly from center (100% at center, 50% at edge)
@@ -205,7 +207,7 @@ export class CombatSystem {
       // Emit events
       this.emit({
         type: 'target_damaged',
-        position: target.position,
+        position: target.getTargetPosition(),
         damage: { ...damageInfo, amount: finalDamage },
         targetId: target.id,
       });
@@ -213,7 +215,7 @@ export class CombatSystem {
       if (!target.isAlive) {
         this.emit({
           type: 'target_killed',
-          position: target.position,
+          position: target.getTargetPosition(),
           targetId: target.id,
         });
         target.onDeath?.();
@@ -228,7 +230,7 @@ export class CombatSystem {
     });
 
     // Area projectiles always expire after detonating
-    projectile.active = false;
+    projectile.deactivate();
   }
 
   /**

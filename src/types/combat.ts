@@ -95,7 +95,7 @@ export interface DamageInfo {
 
 export interface ITarget {
   id: string;
-  position: Position;
+  getTargetPosition(): Position;
   health: number;
   maxHealth: number;
   armor: number;
@@ -103,7 +103,7 @@ export interface ITarget {
   container: Container;
 
   takeDamage(damage: DamageInfo): void;
-  getBounds(): Bounds;
+  getEntityBounds(): Bounds;
   onDeath?(): void;
 }
 

@@ -108,12 +108,12 @@ export class Enemy extends Entity implements ITarget {
   // ITarget Implementation
   // ============================================================================
 
-  get position(): Position {
-    return { x: this._x, y: this._y };
+  getTargetPosition(): Position {
+    return { x: this.x, y: this.y };
   }
 
   get isAlive(): boolean {
-    return this.health > 0 && this._active;
+    return this.health > 0 && this.isActive;
   }
 
   takeDamage(damage: DamageInfo): void {
@@ -135,14 +135,14 @@ export class Enemy extends Entity implements ITarget {
     }, 100);
 
     if (this.health <= 0) {
-      this._active = false;
+      this.deactivate();
     }
   }
 
-  getBounds(): Bounds {
+  getEntityBounds(): Bounds {
     return {
-      x: this._x - this._width / 2,
-      y: this._y - this._height / 2,
+      x: this.x - this._width / 2,
+      y: this.y - this._height / 2,
       width: this._width,
       height: this._height,
     };
@@ -191,13 +191,13 @@ export class Enemy extends Entity implements ITarget {
   // ============================================================================
 
   update(deltaTime: number): void {
-    if (!this._active || this.path.length === 0) return;
+    if (!this.isActive || this.path.length === 0) return;
 
     // Move toward current path point
     if (this.pathIndex < this.path.length) {
       const target = this.path[this.pathIndex];
-      const dx = target.x - this._x;
-      const dy = target.y - this._y;
+      const dx = target.x - this.x;
+      const dy = target.y - this.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < this.speed * deltaTime * 2) {
@@ -232,12 +232,12 @@ export class Enemy extends Entity implements ITarget {
 
   private createHealthBar(): void {
     if (this.healthBarGraphics) {
-      this.container.removeChild(this.healthBarGraphics);
+      this.removeChild(this.healthBarGraphics);
       this.healthBarGraphics.destroy();
     }
 
     this.healthBarGraphics = new Graphics();
-    this.container.addChild(this.healthBarGraphics);
+    this.addChild(this.healthBarGraphics);
     this.updateHealthBar();
   }
 
