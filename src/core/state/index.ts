@@ -4,5 +4,6 @@ export { GameStateManager } from './GameStateManager';
 export type {
   StateChangeCallback,
   GameEventCallback,
+  GameEventName,
   GameStateManagerConfig,
 } from './GameStateManager';

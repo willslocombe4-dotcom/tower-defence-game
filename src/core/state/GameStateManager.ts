@@ -8,6 +8,19 @@ export type StateChangeCallback = (
 
 export type GameEventCallback = (data: GameStateData) => void;
 
+export type GameEventName =
+  | 'gameStarted'
+  | 'gamePaused'
+  | 'gameResumed'
+  | 'gameOver'
+  | 'victory'
+  | 'livesChanged'
+  | 'goldChanged'
+  | 'scoreChanged'
+  | 'waveChanged'
+  | 'gameReset'
+  | 'gameRestarted';
+
 export interface GameStateManagerConfig {
   initialLives?: number;
   initialGold?: number;
@@ -17,11 +30,17 @@ export interface GameStateManagerConfig {
 export class GameStateManager {
   private currentState: GameState = GameState.LOADING;
   private data: GameStateData;
+  private initialConfig: GameStateManagerConfig;
   private stateChangeCallbacks: Map<string, StateChangeCallback> = new Map();
   private eventCallbacks: Map<string, Map<string, GameEventCallback>> = new Map();
 
   constructor(config: GameStateManagerConfig = {}) {
-    this.data = {
+    this.initialConfig = { ...config };
+    this.data = this.createInitialData(config);
+  }
+
+  private createInitialData(config: GameStateManagerConfig): GameStateData {
+    return {
       ...DEFAULT_GAME_STATE_DATA,
       lives: config.initialLives ?? DEFAULT_GAME_STATE_DATA.lives,
       maxLives: config.initialLives ?? DEFAULT_GAME_STATE_DATA.maxLives,
@@ -156,15 +175,9 @@ export class GameStateManager {
     this.emitEvent('waveChanged');
   }
 
-  reset(config: GameStateManagerConfig = {}): void {
-    this.data = {
-      ...DEFAULT_GAME_STATE_DATA,
-      lives: config.initialLives ?? DEFAULT_GAME_STATE_DATA.lives,
-      maxLives: config.initialLives ?? DEFAULT_GAME_STATE_DATA.maxLives,
-      gold: config.initialGold ?? DEFAULT_GAME_STATE_DATA.gold,
-      totalWaves: config.totalWaves ?? DEFAULT_GAME_STATE_DATA.totalWaves,
-    };
-
+  reset(config?: GameStateManagerConfig): void {
+    const configToUse = config ?? this.initialConfig;
+    this.data = this.createInitialData(configToUse);
     this.emitEvent('gameReset');
   }
 
@@ -182,19 +195,27 @@ export class GameStateManager {
     return this.stateChangeCallbacks.delete(id);
   }
 
-  on(eventName: string, id: string, callback: GameEventCallback): void {
+  on(eventName: GameEventName, id: string, callback: GameEventCallback): void {
     if (!this.eventCallbacks.has(eventName)) {
       this.eventCallbacks.set(eventName, new Map());
     }
     this.eventCallbacks.get(eventName)!.set(id, callback);
   }
 
-  off(eventName: string, id: string): boolean {
+  off(eventName: GameEventName, id: string): boolean {
     const eventMap = this.eventCallbacks.get(eventName);
     if (eventMap) {
       return eventMap.delete(id);
     }
     return false;
+  }
+
+  once(eventName: GameEventName, id: string, callback: GameEventCallback): void {
+    const wrappedCallback: GameEventCallback = (data) => {
+      callback(data);
+      this.off(eventName, id);
+    };
+    this.on(eventName, id, wrappedCallback);
   }
 
   private notifyStateChange(newState: GameState, oldState: GameState): void {
@@ -203,7 +224,7 @@ export class GameStateManager {
     });
   }
 
-  private emitEvent(eventName: string): void {
+  private emitEvent(eventName: GameEventName): void {
     const eventMap = this.eventCallbacks.get(eventName);
     if (eventMap) {
       eventMap.forEach((callback) => {

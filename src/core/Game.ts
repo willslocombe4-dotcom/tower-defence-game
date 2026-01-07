@@ -171,26 +171,35 @@ export class Game {
   }
 
   restart(): void {
-    this.clearGameState();
+    this.clearGameObjects();
     this.stateManager.restart();
+    this.gameLoop.start();
     console.log('Game restarted');
   }
 
   returnToMenu(): void {
-    this.clearGameState();
+    this.clearGameObjects();
     this.stateManager.reset();
     this.stateManager.transitionToMenu();
     this.hideGameOverScreen();
     console.log('Returned to menu');
   }
 
-  private clearGameState(): void {
-    this.gameLoop.clearAllCallbacks();
-
+  private clearGameObjects(): void {
     while (this.gameContainer.children.length > 0) {
       const child = this.gameContainer.children[0];
       this.gameContainer.removeChild(child);
       child.destroy();
+    }
+  }
+
+  clearGameplayCallbacks(protectedIds: string[] = []): void {
+    const callbackIds = this.gameLoop.getCallbackIds();
+
+    for (const id of callbackIds) {
+      if (!protectedIds.includes(id)) {
+        this.gameLoop.removeUpdateCallback(id);
+      }
     }
   }
 

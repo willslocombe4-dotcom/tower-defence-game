@@ -14,5 +14,6 @@ export type {
   GameStateData,
   StateChangeCallback,
   GameEventCallback,
+  GameEventName,
   GameStateManagerConfig,
 } from './state';
