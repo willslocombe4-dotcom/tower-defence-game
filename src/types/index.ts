@@ -110,6 +110,39 @@ export interface SpawnQueueEntry {
 }
 
 // ============================================================================
+// Wave Manager State Machine
+// ============================================================================
+
+/**
+ * Internal state machine states for WaveManager.
+ * Provides clear lifecycle tracking and valid state transitions.
+ */
+export enum WaveManagerState {
+  /** Initial state, waiting to start */
+  IDLE = 'idle',
+  /** Counting down to next wave */
+  COUNTDOWN = 'countdown',
+  /** Actively spawning enemies */
+  SPAWNING = 'spawning',
+  /** All enemies spawned, waiting for them to be cleared */
+  WAITING_FOR_CLEAR = 'waiting_for_clear',
+  /** All waves completed */
+  COMPLETE = 'complete',
+}
+
+/**
+ * Spawn mode for mixed enemy waves
+ */
+export enum SpawnMode {
+  /** Sequential: Spawn all of type A, then all of type B (default) */
+  SEQUENTIAL = 'sequential',
+  /** Interleaved: Alternate between enemy types for mixed encounters */
+  INTERLEAVED = 'interleaved',
+  /** Random: Randomly select from available enemy types */
+  RANDOM = 'random',
+}
+
+// ============================================================================
 // Wave Event Types
 // ============================================================================
 

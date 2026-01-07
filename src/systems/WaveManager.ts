@@ -25,6 +25,8 @@ import {
   DifficultyScaling,
   EnemyType,
   IEnemyManager,
+  WaveManagerState,
+  SpawnMode,
 } from '../types';
 import {
   WAVE_DEFINITIONS,
@@ -52,6 +54,8 @@ export interface WaveManagerConfig {
   endlessMode?: boolean;
   /** Path ID to spawn enemies on */
   pathId?: string;
+  /** Spawn mode for mixed enemy waves (default: sequential) */
+  spawnMode?: SpawnMode;
 }
 
 // ============================================================================
@@ -66,13 +70,23 @@ export class WaveManager {
   private autoStartWaves: boolean;
   private endlessMode: boolean;
   private pathId: string | undefined;
+  private spawnMode: SpawnMode;
 
-  // State
+  // State machine
+  private _state: WaveManagerState = WaveManagerState.IDLE;
   private currentWaveIndex: number = -1;
-  private isActive: boolean = false;
   private isPaused: boolean = false;
-  private isComplete: boolean = false;
-  private isCountingDown: boolean = false;
+
+  // Legacy state getters (for backwards compatibility)
+  private get isActive(): boolean {
+    return this._state !== WaveManagerState.IDLE && this._state !== WaveManagerState.COMPLETE;
+  }
+  private get isComplete(): boolean {
+    return this._state === WaveManagerState.COMPLETE;
+  }
+  private get isCountingDown(): boolean {
+    return this._state === WaveManagerState.COUNTDOWN;
+  }
 
   // Spawn queue
   private spawnQueue: SpawnQueueEntry[] = [];
@@ -107,6 +121,7 @@ export class WaveManager {
     this.autoStartWaves = config.autoStartWaves ?? true;
     this.endlessMode = config.endlessMode ?? false;
     this.pathId = config.pathId;
+    this.spawnMode = config.spawnMode ?? SpawnMode.SEQUENTIAL;
 
     // Initialize event listener maps
     Object.values(WaveEventType).forEach((eventType) => {
@@ -136,9 +151,8 @@ export class WaveManager {
       return;
     }
 
-    this.isActive = true;
+    this.transitionTo(WaveManagerState.COUNTDOWN);
     this.isPaused = false;
-    this.isComplete = false;
     this.currentWaveIndex = -1;
     this.resetStatistics();
 
@@ -150,10 +164,44 @@ export class WaveManager {
    * Stop the wave system
    */
   stop(): void {
-    this.isActive = false;
+    this.transitionTo(WaveManagerState.IDLE);
     this.isPaused = false;
-    this.isCountingDown = false;
     this.spawnQueue = [];
+  }
+
+  /**
+   * Get the current state machine state
+   */
+  get internalState(): WaveManagerState {
+    return this._state;
+  }
+
+  /**
+   * Set the spawn mode for mixed enemy waves
+   */
+  setSpawnMode(mode: SpawnMode): void {
+    this.spawnMode = mode;
+  }
+
+  /**
+   * Transition to a new state (internal state machine)
+   */
+  private transitionTo(newState: WaveManagerState): void {
+    const validTransitions: Record<WaveManagerState, WaveManagerState[]> = {
+      [WaveManagerState.IDLE]: [WaveManagerState.COUNTDOWN],
+      [WaveManagerState.COUNTDOWN]: [WaveManagerState.SPAWNING, WaveManagerState.IDLE],
+      [WaveManagerState.SPAWNING]: [WaveManagerState.WAITING_FOR_CLEAR, WaveManagerState.IDLE],
+      [WaveManagerState.WAITING_FOR_CLEAR]: [WaveManagerState.COUNTDOWN, WaveManagerState.COMPLETE, WaveManagerState.IDLE],
+      [WaveManagerState.COMPLETE]: [WaveManagerState.IDLE],
+    };
+
+    const allowed = validTransitions[this._state];
+    if (!allowed.includes(newState)) {
+      console.warn(`WaveManager: Invalid state transition from ${this._state} to ${newState}`);
+      return;
+    }
+
+    this._state = newState;
   }
 
   /**
@@ -439,6 +487,8 @@ export class WaveManager {
       return;
     }
 
+    this.transitionTo(WaveManagerState.SPAWNING);
+
     // Get wave definition (generate if endless mode)
     const waveDefinition = this.getWaveDefinition(this.currentWaveIndex);
     const scaledWave = getScaledWaveDefinition(waveDefinition, this.difficulty);
@@ -467,6 +517,28 @@ export class WaveManager {
 
   private buildSpawnQueue(wave: WaveDefinition): void {
     this.spawnQueue = [];
+
+    switch (this.spawnMode) {
+      case SpawnMode.INTERLEAVED:
+        this.buildInterleavedQueue(wave);
+        break;
+      case SpawnMode.RANDOM:
+        this.buildRandomQueue(wave);
+        break;
+      case SpawnMode.SEQUENTIAL:
+      default:
+        this.buildSequentialQueue(wave);
+        break;
+    }
+
+    // Sort by spawn time
+    this.spawnQueue.sort((a, b) => a.spawnTime - b.spawnTime);
+  }
+
+  /**
+   * Build spawn queue with sequential spawning (all of type A, then B, etc.)
+   */
+  private buildSequentialQueue(wave: WaveDefinition): void {
     let currentTime = 0;
 
     for (const enemySpawn of wave.enemies) {
@@ -478,9 +550,69 @@ export class WaveManager {
         currentTime += enemySpawn.spawnDelay;
       }
     }
+  }
 
-    // Sort by spawn time
-    this.spawnQueue.sort((a, b) => a.spawnTime - b.spawnTime);
+  /**
+   * Build spawn queue with interleaved spawning (alternates between types)
+   * Creates more varied and challenging mixed encounters.
+   */
+  private buildInterleavedQueue(wave: WaveDefinition): void {
+    // Create spawn counters for each enemy type
+    const spawnCounters = wave.enemies.map((spawn) => ({
+      type: spawn.type,
+      remaining: spawn.count,
+      delay: spawn.spawnDelay,
+    }));
+
+    let currentTime = 0;
+    let typeIndex = 0;
+
+    // Round-robin through enemy types until all are spawned
+    while (spawnCounters.some((s) => s.remaining > 0)) {
+      const counter = spawnCounters[typeIndex];
+
+      if (counter.remaining > 0) {
+        this.spawnQueue.push({
+          type: counter.type,
+          spawnTime: currentTime,
+        });
+        counter.remaining--;
+        currentTime += counter.delay;
+      }
+
+      // Move to next type
+      typeIndex = (typeIndex + 1) % spawnCounters.length;
+    }
+  }
+
+  /**
+   * Build spawn queue with randomized spawning order.
+   * Uses weighted random selection based on remaining counts.
+   */
+  private buildRandomQueue(wave: WaveDefinition): void {
+    // Create a pool of enemies to spawn
+    const pool: { type: EnemyType; delay: number }[] = [];
+    for (const enemySpawn of wave.enemies) {
+      for (let i = 0; i < enemySpawn.count; i++) {
+        pool.push({ type: enemySpawn.type, delay: enemySpawn.spawnDelay });
+      }
+    }
+
+    // Shuffle the pool (Fisher-Yates)
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    // Build queue from shuffled pool
+    let currentTime = 0;
+    for (const entry of pool) {
+      this.spawnQueue.push({
+        type: entry.type,
+        spawnTime: currentTime,
+      });
+      currentTime += entry.delay;
+    }
   }
 
   private updateWaveSpawning(deltaMs: number): void {
@@ -533,6 +665,11 @@ export class WaveManager {
       return;
     }
 
+    // Transition to waiting state once all enemies are spawned
+    if (this._state === WaveManagerState.SPAWNING) {
+      this.transitionTo(WaveManagerState.WAITING_FOR_CLEAR);
+    }
+
     // Check if all enemies handled (killed or leaked)
     const totalHandled =
       this.enemiesKilledThisWave + this.enemiesLeakedThisWave;
@@ -571,8 +708,7 @@ export class WaveManager {
   }
 
   private completeAllWaves(): void {
-    this.isComplete = true;
-    this.isActive = false;
+    this.transitionTo(WaveManagerState.COMPLETE);
 
     this.emit(WaveEventType.ALL_WAVES_COMPLETED, {
       totalWaves: this.currentWaveIndex + 1,
