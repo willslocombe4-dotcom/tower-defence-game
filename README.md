@@ -59,6 +59,13 @@ tower-defence-game/
 │   │   ├── GameLoop.ts  # Update loop management
 │   │   ├── AssetLoader.ts # Asset loading system
 │   │   └── index.ts     # Core exports
+│   ├── map/
+│   │   ├── GameMap.ts   # Map orchestrator
+│   │   ├── Grid.ts      # Tile grid management
+│   │   ├── Tile.ts      # Individual tile class
+│   │   ├── PathManager.ts # Enemy path handling
+│   │   ├── types.ts     # Type definitions
+│   │   └── maps/        # Level configurations
 │   └── main.ts          # Application entry point
 ├── index.html           # HTML template
 ├── package.json         # Dependencies and scripts
@@ -77,17 +84,16 @@ Manages update callbacks using PixiJS ticker. Supports adding/removing callbacks
 ### AssetLoader
 Bundle-based asset management using PixiJS Assets API. Supports textures, spritesheets, and progress tracking.
 
+### Grid & Map System
+Tile-based grid with support for different tile types (path, buildable, blocked, spawn, exit). Includes PathManager for enemy waypoint navigation and GameMap for pointer interaction handling.
+
 ## Roadmap
 
 ### Completed
 - [x] **Project Setup** - PixiJS initialization, game loop, asset loading structure
+- [x] **Grid & Map System** - Tile-based grid, enemy path, placeable tower zones
 
 ### To Do
-
-#### Grid & Map System
-- [ ] Create tile-based grid
-- [ ] Define path for enemies
-- [ ] Placeable tower zones
 
 #### Enemy System
 - [ ] Enemy types (fast/tank/flying)
