@@ -126,13 +126,15 @@ export class Enemy extends Entity implements ITarget {
     if (this.flashTimeoutId) {
       clearTimeout(this.flashTimeoutId);
     }
-    this.graphics.tint = 0xff0000;
-    this.flashTimeoutId = setTimeout(() => {
-      if (this.graphics && !this.graphics.destroyed) {
-        this.graphics.tint = 0xffffff;
-      }
-      this.flashTimeoutId = undefined;
-    }, 100);
+    if (this.graphics && !this.graphics.destroyed) {
+      this.graphics.tint = 0xff0000;
+      this.flashTimeoutId = setTimeout(() => {
+        if (this.graphics && !this.graphics.destroyed) {
+          this.graphics.tint = 0xffffff;
+        }
+        this.flashTimeoutId = undefined;
+      }, 100);
+    }
 
     if (this.health <= 0) {
       this.deactivate();
