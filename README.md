@@ -62,6 +62,11 @@ tower-defence-game/
 │   │   │   ├── GameState.ts
 │   │   │   └── GameStateManager.ts
 │   │   └── index.ts     # Core exports
+│   ├── entities/
+│   │   ├── Entity.ts      # Base entity class
+│   │   ├── Enemy.ts       # Combat enemy (ITarget)
+│   │   ├── Projectile.ts  # Projectile entity
+│   │   └── enemies/       # Wave enemy variants
 │   ├── config/
 │   │   └── WaveConfig.ts # Wave definitions & difficulty
 │   ├── map/
@@ -72,9 +77,12 @@ tower-defence-game/
 │   │   ├── types.ts     # Type definitions
 │   │   └── maps/        # Level configurations
 │   ├── systems/
-│   │   ├── EnemyManager.ts  # Enemy lifecycle
-│   │   ├── PathSystem.ts    # Path navigation
-│   │   └── WaveManager.ts   # Wave spawning
+│   │   ├── EnemyManager.ts     # Enemy lifecycle
+│   │   ├── PathSystem.ts       # Path navigation
+│   │   ├── WaveManager.ts      # Wave spawning
+│   │   ├── ProjectileManager.ts # Projectile lifecycle
+│   │   ├── CombatSystem.ts     # Damage & collision
+│   │   └── EffectsManager.ts   # Visual effects
 │   ├── ui/
 │   │   ├── HUD.ts           # Heads-up display
 │   │   ├── GameOverScreen.ts # Victory/defeat screen
@@ -108,6 +116,12 @@ Manages wave-based enemy spawning with configurable wave definitions, timed spaw
 ### Game State Manager
 Centralized state management with states (Loading, Menu, Playing, Paused, Victory, Game Over), event system for UI updates, and proper lifecycle handling.
 
+### Combat System
+Projectile-based combat with different damage types:
+- **Projectile Types** - Bullet (fast, single target), Arrow (piercing), Magic (area damage)
+- **Damage Calculation** - Physical vs magical damage, armor reduction formula
+- **Effects Manager** - Hit effects, damage numbers, death effects, area indicators
+
 ### UI Components
 - **HUD** - Displays lives, gold, wave counter, and score
 - **GameOverScreen** - Victory/defeat screen with restart and menu options
@@ -123,15 +137,9 @@ Centralized state management with states (Loading, Menu, Playing, Paused, Victor
 - [x] **Wave Manager** - Wave configuration, enemy composition, difficulty scaling, countdown timer
 - [x] **Game State Management** - Win/lose conditions, game over screen, restart functionality, pause system
 - [x] **Basic UI** - HUD (lives/gold/wave/score), game over screen, pause overlay
+- [x] **Projectiles & Combat** - Projectile types (bullet/arrow/magic), damage calculation with armor, hit detection, visual effects, area damage
 
 ### To Do
-
-#### Projectiles & Combat
-- [ ] Projectile sprites (bullets/arrows/magic)
-- [ ] Damage calculation with armor system
-- [ ] Hit detection and collision
-- [ ] Death effects & particles
-- [ ] Area damage for splash towers
 
 #### Economy & Tower Shop
 - [ ] Tower shop panel
