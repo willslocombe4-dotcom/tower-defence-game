@@ -1,4 +1,5 @@
 import { Game } from './core';
+import { GameMap, level1 } from './map';
 
 const game = new Game({
   width: 1280,
@@ -7,13 +8,30 @@ const game = new Game({
   containerId: 'game-container',
 });
 
+let gameMap: GameMap;
+
 async function bootstrap(): Promise<void> {
   try {
     await game.init();
+
+    gameMap = new GameMap(level1);
+    gameMap.centerInContainer(game.width, game.height);
+    game.stage.addChild(gameMap);
+
+    gameMap.setDebugPathVisible(true);
+
+    gameMap.onTileClick((event) => {
+      if (event.canBuild) {
+        console.log(
+          `Clicked buildable tile at (${event.gridPosition.col}, ${event.gridPosition.row})`
+        );
+        event.tile.placeTower();
+      }
+    });
+
     game.start();
 
-    game.loop.addUpdateCallback('debug', (deltaTime) => {
-      // Game update logic will go here
+    game.loop.addUpdateCallback('game', (deltaTime) => {
       void deltaTime;
     });
   } catch (error) {
@@ -23,4 +41,4 @@ async function bootstrap(): Promise<void> {
 
 bootstrap();
 
-export { game };
+export { game, gameMap };
