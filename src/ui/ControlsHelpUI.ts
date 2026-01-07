@@ -64,7 +64,7 @@ export class ControlsHelpUI extends Container {
       mouseLines * lineHeight +
       10;
 
-    const panelX = this.config.screenWidth - panelWidth - 15;
+    const panelX = this.config.screenWidth - panelWidth - 5;
     const panelY = 60; // Below HUD
 
     this.position.set(panelX, panelY);
