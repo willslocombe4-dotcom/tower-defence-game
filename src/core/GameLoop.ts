@@ -51,6 +51,10 @@ export class GameLoop {
     this.updateCallbacks.clear();
   }
 
+  getCallbackIds(): string[] {
+    return Array.from(this.updateCallbacks.keys());
+  }
+
   get isRunning(): boolean {
     return this.running;
   }

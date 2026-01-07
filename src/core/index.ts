@@ -9,3 +9,11 @@ export type {
   AssetDefinition,
   LoadProgressCallback,
 } from './AssetLoader';
+export { GameState, GameStateManager, DEFAULT_GAME_STATE_DATA } from './state';
+export type {
+  GameStateData,
+  StateChangeCallback,
+  GameEventCallback,
+  GameEventName,
+  GameStateManagerConfig,
+} from './state';
