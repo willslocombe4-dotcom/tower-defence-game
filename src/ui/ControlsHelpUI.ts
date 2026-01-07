@@ -13,7 +13,7 @@ interface ControlEntry {
 export class ControlsHelpUI extends Container {
   private config: ControlsHelpUIConfig;
   private background: Graphics;
-  private isVisible: boolean = false; // Hidden by default, press H to show
+  private isVisible: boolean = true; // Visible by default since it's positioned outside game area
 
   private static readonly CONTROLS: ControlEntry[] = [
     { key: 'P', description: 'Pause / Resume' },
@@ -44,7 +44,6 @@ export class ControlsHelpUI extends Container {
     this.addChild(this.background);
 
     this.createPanel();
-    this.visible = false; // Start hidden
   }
 
   private createPanel(): void {
@@ -65,7 +64,8 @@ export class ControlsHelpUI extends Container {
       mouseLines * lineHeight +
       10;
 
-    const panelX = this.config.screenWidth - panelWidth + 50;
+    // Position panel to the right of the game area (outside the 1280px canvas)
+    const panelX = this.config.screenWidth + 10;
     const panelY = 60; // Below HUD
 
     this.position.set(panelX, panelY);

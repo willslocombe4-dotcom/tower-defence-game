@@ -9,7 +9,6 @@ import {
   EffectsManager,
 } from './systems';
 import { ProjectileType } from './types/combat';
-import { ControlsHelpUI } from './ui';
 import {
   EnemySpawnedEventData,
   EnemyKilledEventData,
@@ -40,8 +39,6 @@ let projectileManager: ProjectileManager;
 let combatSystem: CombatSystem;
 let effectsManager: EffectsManager;
 
-// UI
-let controlsHelpUI: ControlsHelpUI;
 
 async function bootstrap(): Promise<void> {
   try {
@@ -119,13 +116,6 @@ async function bootstrap(): Promise<void> {
     // Start the first wave
     waveManager.start();
 
-    // Initialize controls help UI
-    controlsHelpUI = new ControlsHelpUI({
-      screenWidth: game.width,
-      screenHeight: game.height,
-    });
-    game.stage.addChild(controlsHelpUI);
-
     // Set up debug controls
     setupDebugControls();
 
@@ -178,7 +168,10 @@ function setupDebugControls(): void {
   window.addEventListener('keydown', (event) => {
     // Toggle controls help (works anytime)
     if (event.key === 'h' || event.key === 'H') {
-      controlsHelpUI.toggle();
+      const panel = document.getElementById('controls-panel');
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
       return;
     }
 
@@ -275,4 +268,4 @@ function setupDebugControls(): void {
 
 bootstrap();
 
-export { game, gameMap, pathSystem, enemyManager, waveManager, projectileManager, combatSystem, effectsManager, controlsHelpUI };
+export { game, gameMap, pathSystem, enemyManager, waveManager, projectileManager, combatSystem, effectsManager };
