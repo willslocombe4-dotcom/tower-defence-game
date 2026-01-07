@@ -18,15 +18,6 @@ import {
   WaveCompletedEventData,
   AllWavesCompletedEventData,
 } from './types';
-import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
-import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
-
-// Mount Vibe Kanban Web Companion
-const vibeKanbanRoot = document.getElementById('vibe-kanban-root');
-if (vibeKanbanRoot) {
-  createRoot(vibeKanbanRoot).render(createElement(VibeKanbanWebCompanion));
-}
 
 const game = new Game({
   width: 1280,
