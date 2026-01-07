@@ -1,6 +1,14 @@
 import { Game, GameState } from './core';
 import { GameMap, level1 } from './map';
-import { PathSystem, EnemyManager, WaveManager } from './systems';
+import {
+  PathSystem,
+  EnemyManager,
+  WaveManager,
+  ProjectileManager,
+  CombatSystem,
+  EffectsManager,
+} from './systems';
+import { ProjectileType } from './types/combat';
 import {
   EnemySpawnedEventData,
   EnemyKilledEventData,
@@ -26,6 +34,11 @@ let pathSystem: PathSystem;
 let enemyManager: EnemyManager;
 let waveManager: WaveManager;
 
+// Combat systems
+let projectileManager: ProjectileManager;
+let combatSystem: CombatSystem;
+let effectsManager: EffectsManager;
+
 async function bootstrap(): Promise<void> {
   try {
     await game.init();
@@ -46,9 +59,37 @@ async function bootstrap(): Promise<void> {
     // Initialize wave manager
     waveManager = new WaveManager(enemyManager);
 
+    // Initialize combat systems
+    projectileManager = new ProjectileManager(game.stage);
+    combatSystem = new CombatSystem(projectileManager);
+    effectsManager = new EffectsManager(game.stage);
+
+    // Wire up combat events to effects
+    combatSystem.on('projectile_hit', (event) => {
+      effectsManager.playHitEffect(event.position);
+      if (event.projectileType === ProjectileType.MAGIC) {
+        effectsManager.playAreaIndicator(event.position, 40, 0x9933ff);
+      }
+    });
+
+    combatSystem.on('target_damaged', (event) => {
+      if (event.damage) {
+        effectsManager.playDamageNumber(event.position, event.damage.amount);
+      }
+    });
+
+    combatSystem.on('target_killed', (event) => {
+      effectsManager.playDeathEffect(event.position);
+    });
+
     // Register update callbacks with game loop
     game.loop.addUpdateCallback('enemyManager', enemyManager.createUpdateCallback());
     game.loop.addUpdateCallback('waveManager', waveManager.createUpdateCallback());
+    game.loop.addUpdateCallback('combat', (deltaTime) => {
+      projectileManager.update(deltaTime);
+      combatSystem.update(deltaTime);
+      effectsManager.update(deltaTime);
+    });
 
     // Set up tile click handling for tower placement
     gameMap.onTileClick((event) => {
@@ -121,7 +162,26 @@ function setupEventListeners(): void {
 }
 
 function setupDebugControls(): void {
+  let selectedProjectileType: ProjectileType = ProjectileType.BULLET;
+
   window.addEventListener('keydown', (event) => {
+    // Projectile type selection (works anytime)
+    switch (event.key) {
+      case '1':
+        selectedProjectileType = ProjectileType.BULLET;
+        console.log('Selected: Bullet');
+        return;
+      case '2':
+        selectedProjectileType = ProjectileType.ARROW;
+        console.log('Selected: Arrow');
+        return;
+      case '3':
+        selectedProjectileType = ProjectileType.MAGIC;
+        console.log('Selected: Magic');
+        return;
+    }
+
+    // Game controls (require playing or paused state)
     if (!game.isPlaying && game.state.state !== GameState.PAUSED) return;
 
     switch (event.key) {
@@ -163,6 +223,25 @@ function setupDebugControls(): void {
     }
   });
 
+  // Click to fire projectiles (for testing combat)
+  game.pixiApp.canvas.addEventListener('click', (e) => {
+    if (!game.isPlaying) return;
+
+    const rect = game.pixiApp.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Fire from bottom center of screen
+    const startX = game.width / 2;
+    const startY = game.height - 50;
+
+    projectileManager.spawn({
+      start: { x: startX, y: startY },
+      target: { x: mouseX, y: mouseY },
+      type: selectedProjectileType,
+    });
+  });
+
   console.log('Debug controls enabled:');
   console.log('  L - Lose 1 life');
   console.log('  G - Add 50 gold');
@@ -172,8 +251,10 @@ function setupDebugControls(): void {
   console.log('  O - Trigger Game Over');
   console.log('  V - Trigger Victory');
   console.log('  N - Call next wave early');
+  console.log('  1/2/3 - Select projectile type (Bullet/Arrow/Magic)');
+  console.log('  Click - Fire projectile at mouse position');
 }
 
 bootstrap();
 
-export { game, gameMap, pathSystem, enemyManager, waveManager };
+export { game, gameMap, pathSystem, enemyManager, waveManager, projectileManager, combatSystem, effectsManager };

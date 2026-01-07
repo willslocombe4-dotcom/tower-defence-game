@@ -185,6 +185,7 @@ export class Game {
   }
 
   restart(): void {
+    this.cleanupStateListeners();
     this.clearGameObjects();
     this.clearGameplayCallbacks();
     this.stateManager.restart();
@@ -193,6 +194,7 @@ export class Game {
   }
 
   returnToMenu(): void {
+    this.cleanupStateListeners();
     this.clearGameObjects();
     this.clearGameplayCallbacks();
     this.stateManager.reset();

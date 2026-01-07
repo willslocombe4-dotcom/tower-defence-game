@@ -1,5 +1,6 @@
 import { Graphics, Container } from 'pixi.js';
 import { Waypoint, PathDefinition } from '../types';
+import type { GameMap } from '../map/GameMap';
 
 /**
  * Manages enemy paths through the game map.
@@ -125,6 +126,37 @@ export class PathSystem {
       ],
     };
     this.addPath(path);
+  }
+
+  /**
+   * Create path from a GameMap's PathManager waypoints.
+   * Extracts the world positions of each waypoint and creates a PathDefinition.
+   */
+  createPathFromMap(gameMap: GameMap): void {
+    const pathManager = gameMap.getPathManager();
+    const gridWaypoints = pathManager.getWaypoints();
+
+    // Convert grid waypoints to world position waypoints
+    const waypoints: Waypoint[] = [];
+    for (let i = 0; i < gridWaypoints.length; i++) {
+      const worldPos = pathManager.getWaypointWorldPosition(i);
+      if (worldPos) {
+        // Adjust for map position offset
+        waypoints.push({
+          x: worldPos.x + gameMap.x,
+          y: worldPos.y + gameMap.y,
+        });
+      }
+    }
+
+    if (waypoints.length > 0) {
+      const path: PathDefinition = {
+        id: 'main',
+        waypoints,
+      };
+      this.addPath(path);
+      this.setDefaultPath('main');
+    }
   }
 
   /**
