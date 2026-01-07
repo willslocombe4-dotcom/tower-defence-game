@@ -92,20 +92,10 @@ Tile-based grid with support for different tile types (path, buildable, blocked,
 ### Completed
 - [x] **Project Setup** - PixiJS initialization, game loop, asset loading structure
 - [x] **Grid & Map System** - Tile-based grid, enemy path, placeable tower zones
+- [x] **Enemy System** - Enemy types (fast/tank/flying), spawning, health bars, path movement
+- [x] **Tower System** - Tower types (cannon/archer/mage), placement UI, targeting, range visualization
 
 ### To Do
-
-#### Enemy System
-- [ ] Enemy types (fast/tank/flying)
-- [ ] Spawning system
-- [ ] Health bars
-- [ ] Movement along path
-
-#### Tower System
-- [ ] Tower types (cannon/archer/mage)
-- [ ] Placement UI
-- [ ] Targeting logic
-- [ ] Attack range visualization
 
 #### Projectiles & Combat
 - [ ] Projectile sprites (bullets/arrows/magic)
