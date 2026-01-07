@@ -2,7 +2,7 @@ import { Application, Container } from 'pixi.js';
 import { AssetLoader } from './AssetLoader';
 import { GameLoop } from './GameLoop';
 import { GameStateManager, GameState, GameStateManagerConfig } from './state';
-import { GameOverScreen, HUD } from '../ui';
+import { GameOverScreen, HUD, PauseOverlay } from '../ui';
 
 export interface GameConfig {
   width: number;
@@ -22,6 +22,7 @@ export class Game {
   private uiContainer: Container;
   private stateManager: GameStateManager;
   private gameOverScreen: GameOverScreen | null = null;
+  private pauseOverlay: PauseOverlay | null = null;
   private hud: HUD | null = null;
   private initialized: boolean = false;
 
@@ -91,18 +92,31 @@ export class Game {
     });
     this.hud.update(this.stateManager.stateData);
     this.uiContainer.addChild(this.hud);
+
+    // Create pause overlay
+    this.pauseOverlay = new PauseOverlay({
+      width: this.config.width,
+      height: this.config.height,
+      onResume: () => this.resume(),
+      onRestart: () => this.restart(),
+      onMainMenu: () => this.returnToMenu(),
+    });
+    this.uiContainer.addChild(this.pauseOverlay);
   }
 
   private setupStateListeners(): void {
     this.stateManager.onStateChange('game', (newState, _oldState, data) => {
       if (newState === GameState.GAME_OVER || newState === GameState.VICTORY) {
         this.showGameOverScreen(newState === GameState.VICTORY);
+        this.pauseOverlay?.hide(true);
         this.gameLoop.pause();
       } else if (newState === GameState.PLAYING) {
         this.hideGameOverScreen();
+        this.pauseOverlay?.hide(true);
         this.hud?.show();
         this.gameLoop.resume();
       } else if (newState === GameState.PAUSED) {
+        this.pauseOverlay?.show();
         this.gameLoop.pause();
       }
 
@@ -287,5 +301,9 @@ export class Game {
 
   get isVictory(): boolean {
     return this.stateManager.isVictory;
+  }
+
+  get isPaused(): boolean {
+    return this.stateManager.state === GameState.PAUSED;
   }
 }
